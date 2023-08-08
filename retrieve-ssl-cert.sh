@@ -2,12 +2,15 @@
 ## Retrieve Porkbun generated SSL Bundle using Porkbun API
 ## JSON responses parsed using jq 1.6
 
+SCRIPT_PATH=${0%/*}
+[ $0 != $SCRIPT_PATH ] && cd $SCRIPT_PATH
+
 ## Get values from files
-APIKEY=$(cat /porkbun/apikey)
-SECRETKEY=$(cat /porkbun/secretapikey)
-DOMAIN=$(cat /porkbun/domainname)
+APIKEY=$(cat apikey)
+SECRETKEY=$(cat secretapikey)
+DOMAIN=$(cat domainname)
 LOG=/tmp/porkbunssl.log
-OUTFOLDER=/porkbun/ssl-bundle
+OUTFOLDER="/ssl/$DOMAIN"
 
 ## Create OUTFOLDER if it doesn't already exist.
 [ ! -d "$OUTFOLDER" ] && mkdir "$OUTFOLDER"

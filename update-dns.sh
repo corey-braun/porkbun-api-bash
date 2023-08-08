@@ -1,10 +1,13 @@
 #!/bin/bash
 ## Dynamic DNS using Porkbun API
 
+SCRIPT_PATH=${0%/*}
+[ $0 != $SCRIPT_PATH ] && cd $SCRIPT_PATH
+
 ## Get values from files
-APIKEY=$(cat /porkbun/apikey)
-SECRETKEY=$(cat /porkbun/secretapikey)
-DOMAIN=$(cat /porkbun/domainname)
+APIKEY=$(cat apikey)
+SECRETKEY=$(cat secretapikey)
+DOMAIN=$(cat domainname)
 LOG=/tmp/porkbunddns.log
 
 ## Get current public IP address
