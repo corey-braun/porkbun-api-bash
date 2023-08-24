@@ -1,5 +1,2 @@
-domainname
-apikey
-secretapikey
-sslbundle.json
 testing/
+porkbun-api.conf
