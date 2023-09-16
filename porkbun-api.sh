@@ -12,13 +12,14 @@ certificatechain_name=fullchain
 intermediatecertificate_name=intermediate
 
 usage_message="\
-Usage: $0 [-hs46] [-v <verbosity>] [-d <domain>] <command> [args]
+Usage: $0 [-hs46] [-c /path/to/config] [-v <verbosity>] [-d <domain>] <command> [args]
     -h prints this help message
     -s enables silent mode (no output sent to STDOUT)
     -4 forces using IPv4 to make API calls
     -6 forces using IPv6 to make API calls
     -v sets verbosity to a value 0-7
     -d sets the domain name to take action on
+    -c sets the path to the config file to source
 Available commands:
     update-dns: Update the DNS A record for a domain. If multiple A records are present the default is to update the first one.
     retrieve-ssl: Retrieve the porkbun-generated wildcard SSL cert for a domain.
@@ -27,33 +28,36 @@ Available commands:
 
 ## Main function, only executed if script was not sourced in another script
 main() {
-    source_config
-    ## Parse flags
-    while getopts ":hsv:46d:" opt; do
+    ## Parse flags, save variables to array to be applied after sourcing config file
+    while getopts ":hsv:46d:c:" opt; do
         case $opt in
             h)
                 echo "$usage_message"; exit 0
                 ;;
             s)
-                SILENT=true
+                opt_vars+=(SILENT=true)
                 ;;
             v)
                 [ "${OPTARG: -1}" = '-' ] && usage "Missing required argument for '-v'"
-                VERBOSITY="$OPTARG"
+                opt_vars+=(VERBOSITY="$OPTARG")
                 ;;
             d)
                 [ "${OPTARG: -1}" = '-' ] && usage "Missing required argument for '-d'"
-                DOMAIN="$OPTARG"
+                opt_vars+=(DOMAIN="$OPTARG")
+                ;;
+            c)
+                [ "${OPTARG: -1}" = '-' ] && usage "Missing required argument for '-c'"
+                CONFIGFILE="$OPTARG"
                 ;;
             4)
                 [ "$IP_VERSION_FLAG" ] && usage "Flags '-4' and '-6' are mutually exclusive"
                 IP_VERSION_FLAG=true
-                IP_VERSION='-4'
+                opt_vars+=(IP_VERSION='-4')
                 ;;
             6)
                 [ "$IP_VERSION_FLAG" ] && usage "Flags '-4' and '-6' are mutually exclusive"
                 IP_VERSION_FLAG=true
-                IP_VERSION='-6'
+                opt_vars+=(IP_VERSION='-6')
                 ;;
             *)
                 usage "Invalid flag: -$OPTARG"
@@ -61,6 +65,8 @@ main() {
         esac
     done
     shift $(($OPTIND - 1))
+    source_config
+    declare -p opt_vars >/dev/null 2>&1 && declare "${opt_vars[@]}" ## Set variables from flags, overwriting config file variables
 
     ## Check required variables are correctly set
     vars_set VERBOSITY APIKEY SECRETKEY
@@ -112,24 +118,29 @@ main() {
 
 ## Source variables from config file of the same basename as script and extension '.cfg' or '.conf'
 source_config() {
-    SCRIPTNAME=${0##*/}
-    SCRIPTPATH=${0%/*}
-    if [ $0 = $SCRIPTPATH ]; then
-        SCRIPTPATH=''
-    else
-        SCRIPTPATH="$SCRIPTPATH/"
-    fi
-    CONFIGFILE="${SCRIPTPATH}${SCRIPTNAME%.*}"
-    if [ -f "$CONFIGFILE.cfg" ]; then
-        CONFIGFILE="$CONFIGFILE.cfg"
-    elif [ -f "$CONFIGFILE.conf" ]; then
-        CONFIGFILE="$CONFIGFILE.conf"
-    else
-        echo "Failed to find config file '$CONFIGFILE.conf'" 1>&2
+    if [ -z "$CONFIGFILE" ]; then
+        SCRIPTNAME=${0##*/}
+        SCRIPTPATH=${0%/*}
+        if [ $0 = $SCRIPTPATH ]; then
+            SCRIPTPATH=''
+        else
+            SCRIPTPATH="$SCRIPTPATH/"
+        fi
+        CONFIGFILE="${SCRIPTPATH}${SCRIPTNAME%.*}"
+        if [ -f "$CONFIGFILE.cfg" ]; then
+            CONFIGFILE="$CONFIGFILE.cfg"
+        elif [ -f "$CONFIGFILE.conf" ]; then
+            CONFIGFILE="$CONFIGFILE.conf"
+        else
+            echo "Failed to find config file '$CONFIGFILE.conf'" 1>&2
+            exit 1
+        fi
+    elif ! [ -f "$CONFIGFILE" ]; then
+        echo "Failed to find config file '$CONFIGFILE'" 1>&2
         exit 1
     fi
     if [ -r $CONFIGFILE ]; then
-        trap 'echo "Encountered an error while sourcing config file"; exit 1' ERR
+        trap 'echo "Encountered an error while sourcing config file" 1>&2; exit 1' ERR
         . $CONFIGFILE
         trap - ERR
     else
@@ -254,7 +265,8 @@ log() { ## Args: <severity level> <log message>
     if [ "$VERBOSITY" -lt "$1" ]; then
         return 0
     fi
-    local logstring="$(date '+%Y-%d-%m %H:%M:%S') $2"
+    local logstring="$(date '+%Y-%d-%m %H:%M:%S') - $2"
+    [ "$1" -le 5 ] && logstring+='\n'
     if ! [ "$SILENT" = true ] || [ "$1" -eq 0 ]; then
         if [ "$1" -eq 0 ]; then
             echo -e "$2" 1>&2
@@ -282,7 +294,7 @@ log_exit() { ## Args: <log message> [severity level] [exit code]
     else
         exit_code="$3"
     fi
-    log "$severity_level" "$1\n"
+    log "$severity_level" "$1"
     exit "$exit_code"
 }
 
@@ -292,7 +304,7 @@ check_exitcode() { ## Args: <log message>
     fi
 }
 
-## Check variables are set, variables names should be passed as strings without '$'
+## Check supplied variables are set, variables names should be passed as strings without '$'
 vars_set() { ## Args: [var1] [var2] [var3] ...
     local vars=("$@")
     for i in "${vars[@]}"; do
@@ -302,7 +314,7 @@ vars_set() { ## Args: [var1] [var2] [var3] ...
     done
 }
 
-## Check or correct variable formatting
+## Check for correct variable formatting
 vars_formatting() {
     SSL_FOLDER=${SSL_FOLDER%/}
     [ ${#IP_VERSION} -eq 1 ] && IP_VERSION="-$IP_VERSION"

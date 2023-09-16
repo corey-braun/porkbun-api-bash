@@ -27,6 +27,8 @@ Can be helpful for confirming your API credentials are configured correctly and 
 Make a custom API call to a specified endpoint with (optional) JSON data. The endpoint should be a string including everything after `https://porkbun.com/api/json/v3/` in the URL. Data should be provided as a string in JSON format, though leading and trailing braces may be omitted. Example data formatting: `'"content": "1.1.1.1", "ttl": "600"'`. If this command is called with no arguments an API call can be forumlated through an interactive dialog.
 
 ## Configuration
-All variables can be configured within file `porkbun-api.conf` located in the same directory as the script. The configuration file will be sourced by the script when called, so it is recommended to give it the same permissions as the parent script. If you choose to rename the script or config file, the config file's basename must match the script's. Details on what configurable variables do are documented in `porkbun-api.conf`.
+All variables can be configured within config file `porkbun-api.conf` located in the same directory as the script. A different config file can be specified with flag `-c /path/to/config`.
 
-Some variables can also be set via flags when calling the script. More usage details are available by calling the script with the `-h` (help) flag.
+The configuration file will be sourced/executed by the script when called, so it is recommended to give it the same permissions as the parent script. Details on what configurable variables do are documented in `porkbun-api.conf`.
+
+Some variables can also be set via flags when calling the script. Any variables set via flags will take precedence over variables set in the config file. More usage details are available by calling the script with the `-h` (help) flag.
