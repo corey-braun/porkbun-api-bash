@@ -23,8 +23,15 @@ By default, this command writes 5 files to a specified destination folder:
 Makes an API call to the Porkbun API `ping` endpoint.
 Can be helpful for confirming your API credentials are configured correctly and you are able to make API calls.
 
-### custom \<endpoint> [data]
-Make a custom API call to a specified endpoint with (optional) JSON data. The `endpoint` argument should be a string including everything after `https://porkbun.com/api/json/v3/` in the API endpoint's URI. Data should be provided as a string in JSON format, though leading and trailing braces may be omitted. Example data formatting: `'"content": "1.1.1.1", "ttl": "600"'`. If this command is called with no arguments an API call can be forumlated through an interactive dialog.
+### custom \<endpoint> [key=value [...]]
+Make a custom API call to a specified endpoint. The `endpoint` argument should be a string including everything after `https://porkbun.com/api/json/v3/` in the API endpoint's URI. Any additional arguments should be in the form `key=value`, and will be added to the JSON POST data sent in the API call.
+
+For example, the following command could be used to create a DNS record:
+```
+porkbun-api custom dns/create/example.com type=A content=1.1.1.1 ttl=600
+```
+
+If this command is called with no arguments, an API call can be forumlated through an interactive dialog.
 
 ## Installation
 To install the script, add the main executable to a directory in your `PATH`, then add the `.porkbun-apirc` configuration file to your home directory:

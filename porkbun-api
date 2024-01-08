@@ -24,7 +24,7 @@ Available commands:
     update-dns: Update the DNS A record for a domain to your current IPv4 address.
     retrieve-ssl: Retrieve the porkbun-generated wildcard SSL cert bundle for a domain.
     ping: Make an API call to the 'ping' endpoint. Useful for verifying your credentials and connection.
-    custom <endpoint> [data]: Make a custom API call. API endpoint and (optional) JSON data to send can be specified as arguments following the command, or through an interactive dialog if no additional arguments are provided."
+    custom <endpoint> [key=value [...]]: Make a custom API call. API endpoint and (optional) key=value pairs to send can be specified as arguments following the command, or through an interactive dialog if no additional arguments are provided."
 
 ## Main function, only executed if script was not sourced in another script
 main() {
@@ -94,18 +94,18 @@ main() {
         custom)
             local endpoint_end api_data
             if [ -z "$2" ]; then
-                echo -n "Enter API endpoint: https://porkbun.com/api/json/v3/"
-                read endpoint_end
-                echo -n "Optionally, enter JSON data to send with the API call: "
-                read api_data
+                read -p 'Enter API endpoint: https://porkbun.com/api/json/v3/' endpoint_end
+                api_data=()
+                while read -p "Optionally, enter additional JSON data to send with the API call in the form 'key=value': " && [ -n "$REPLY" ]; do
+                    api_data+=("$REPLY")
+                done
             else
                 endpoint_end="$2"
-                api_data="$3"
+                shift 2
+                api_data=("$@")
             fi
-            api_data="${api_data#\{}"
-            api_data="${api_data%\}}"
-            log 6 "Making custom API call to endpoint '$endpoint_end' with data '$api_data'"
-            api_call "$endpoint_end" "$api_data"
+            log 6 "Making custom API call to endpoint '$endpoint_end' with data: ${api_data[*]}"
+            api_call "$endpoint_end" "${api_data[@]}"
             echo "$api_response" | jq .
             SILENT=true
             log_exit "Custom API call to endpoint '$endpoint_end' with data '$api_data' successful; API Response: $api_response" 4
@@ -144,18 +144,22 @@ usage() { ## Args: [error message]
 }
 
 ## Makes a call to porkbun API and sets 'api_response' to a string containing the API's JSON response
-## Endpoint argument should include everything after 'porkbun.com/api/json/v3/' in the endpoint's URL
-## JSON data argument should omit leading and trailing braces
-api_call() { ## Args: <endpoint> [json data]
+## Endpoint argument should include everything after 'porkbun.com/api/json/v3/' in the endpoint's URI
+## All additional arguments are interpreted as 'key=value' pairs to add to JSON data sent in API call
+api_call() { ## Args: <endpoint> [key=value [...]]
     [ -z "$1" ] && log_exit 'No endpoint specified for API call'
     local endpoint curl_data response curl_exit_code http_status api_status
     endpoint="https://porkbun.com/api/json/v3/$1"
-    curl_data="{\"apikey\": \"$APIKEY\", \"secretapikey\": \"$SECRETKEY\""
-    if [ -z "$2" ]; then
-        curl_data="${curl_data}}"
-    else
-        curl_data="${curl_data}, $2}"
-    fi
+    shift
+    curl_data="{\"apikey\":\"$APIKEY\",\"secretapikey\":\"$SECRETKEY\""
+    for i in "$@"; do
+        unset key value
+        IFS='=' read key value <<< "$i"
+        key="$(sed 's!"!\\"!g' <<< "$key")"
+        value="$(sed 's!"!\\"!g' <<< "$value")"
+        curl_data+=",\"$key\":\"$value\""
+    done
+    curl_data+='}'
     response=$(curl \
     --silent \
     --fail-with-body \
@@ -171,11 +175,11 @@ api_call() { ## Args: <endpoint> [json data]
     api_status=$(jq -r .status 2>/dev/null <<< "$api_response")
     if [ $curl_exit_code -ne 0 ] || [ "$api_status" != 'SUCCESS' ]; then
         local exit_string="API Call failed\nHTTP Status Code: $http_status\nAPI Endpoint: $endpoint"
-        if [ -n "$2" ]; then
-            exit_string="$exit_string\nData Sent to API: $2"
+        if [ -n "$1" ]; then
+            exit_string+="\nData sent to API: $@"
         fi
         if [ "$api_status"  = 'ERROR' ]; then
-            exit_string="$exit_string\nAPI Response: $api_response"
+            exit_string+="\nAPI Response: $api_response"
         fi
         log_exit "$exit_string"
     fi
@@ -209,7 +213,7 @@ update_dns() {
         log_exit "A Record IP for $DOMAIN already matches public IP of $currentIP" 5
     else
         log 7 "Updating A record for $DOMAIN to current IPv4 address of $currentIP"
-        api_call "dns/edit/$DOMAIN/$ArecordID" "\"content\": \"$currentIP\", \"type\": \"A\", \"ttl\": \"$ArecordTTL\""
+        api_call "dns/edit/$DOMAIN/$ArecordID" "content=$currentIP" 'type=A' "ttl=$ArecordTTL"
         log_exit "A record for $DOMAIN updated to $currentIP successfully" 4
     fi
 }
@@ -294,8 +298,7 @@ check_exitcode() { ## Args: <log message>
 
 ## Check supplied variables are set, variables names should be passed as strings without '$'
 vars_set() { ## Args: [var1] [var2] [var3] ...
-    local vars=("$@")
-    for i in "${vars[@]}"; do
+    for i in "$@"; do
         if [ -z "${!i}" ]; then
             log_exit "Required variable '$i' is unset"
         fi
