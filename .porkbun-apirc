@@ -1,9 +1,10 @@
-## Configuration file for porkbun-api.sh
+## Configuration file for porkbun-api bash script
+## https://github.com/corey-braun/porkbun-api-bash
 #
-## Any commands in this file will be run when it is sourced/executed by the main script, therefore this file should be given the same permissions as it.
-## If renaming the main script this configuration file must also be renamed with the same basename and extension '.cfg' or '.conf'.
+## Any commands in this file will be run when it is sourced/executed by the main script.
+## It is therefore recommended to restrict access to this file as much as possible (i.e. `chmod 600`)
 ## Valid configuration variables are listed below with their default values, uncomment/change them as needed.
-## Flags used when calling the script can override these variables.
+## Flags/arguments provided when calling the script will take precedence over variables set in this file.
 #
 ## Required variables
 DOMAIN= ## The domain name for the script to act on. Can also be set by flag '-d <domain>'.
@@ -22,7 +23,7 @@ SECRETKEY= ## Your Porkbun API Secret Key
 ## Setting SILENT to 'true' disables output to stdout. Unsetting LOGFILE or setting it to an empty string disables output to a log file.
 #VERBOSITY=5 ## Max verbosity of script's messages to output and log, valid values are 0-7; 0 only outputs on fatal errors; 3 outputs on warnings; 4 outputs when changes are made; 5 outputs when no changes are needed; 6 outputs a message stating what the script will do this run; 7 walks through all the steps the script takes (debug mode). Can also be set via flag '-v <verbosity>'.
 #SILENT=false ## Disables output to STDOUT if set to 'true'. Can also be set to true via flag '-s'.
-#LOGFILE='/tmp/porkbun-api.log' ## File to output log messages to. If unset or set to an empty string no output will be logged.
+#LOGFILE="/tmp/porkbun-api-$USER.log" ## File to output log messages to. If unset or set to an empty string no output will be logged.
 #
 ## Other variables
 #A_RECORD_NUM=0 ## Which DNS A record to update with 'update-dns' command. This should not be changed unless the domain you are updating has multiple A records. The A record with the oldest creation date (which has the lowest porkbun "id") is 0, records created later are addressed in ascending order.

@@ -4,7 +4,7 @@
 
 ## Set default variable values
 VERBOSITY=5
-LOGFILE='/tmp/porkbun-api.log'
+LOGFILE="/tmp/porkbun-api-$USER.log"
 SILENT=false
 A_RECORD_NUM=0
 CHECK_CURRENT_CERT=true
@@ -21,9 +21,9 @@ Usage: $0 [-hs46] [-c /path/to/config] [-v <verbosity>] [-d <domain>] <command> 
     -d sets the domain name to take action on
     -c sets the path to the config file to source
 Available commands:
-    update-dns: Update the DNS A record for a domain. If multiple A records are present the default is to update the first one.
-    retrieve-ssl: Retrieve the porkbun-generated wildcard SSL cert for a domain.
-    ping: Make an API call to the ping endpoint. Useful for verifying your credentials and connection.
+    update-dns: Update the DNS A record for a domain to your current IPv4 address.
+    retrieve-ssl: Retrieve the porkbun-generated wildcard SSL cert bundle for a domain.
+    ping: Make an API call to the 'ping' endpoint. Useful for verifying your credentials and connection.
     custom <endpoint> [data]: Make a custom API call. API endpoint and (optional) JSON data to send can be specified as arguments following the command, or through an interactive dialog if no additional arguments are provided."
 
 ## Main function, only executed if script was not sourced in another script
@@ -116,35 +116,23 @@ main() {
     esac
 }
 
-## Source variables from config file of the same basename as script and extension '.cfg' or '.conf'
+## Source config file from user's home directory
+## If variable 'CONFIGFILE' is set (typically from flag '-c'), sources that config file instead
 source_config() {
     if [ -z "$CONFIGFILE" ]; then
-        SCRIPTNAME=${0##*/}
-        SCRIPTPATH=${0%/*}
-        if [ $0 = $SCRIPTPATH ]; then
-            SCRIPTPATH=''
+        CONFIGFILE="$HOME/.porkbun-apirc"
+    fi
+    if [ -f "$CONFIGFILE" ]; then
+        if [ -r "$CONFIGFILE" ]; then
+            trap "echo \"Encountered an error while sourcing config file '$CONFIGFILE'\" >&2; exit 1" ERR
+            . "$CONFIGFILE"
+            trap - ERR
         else
-            SCRIPTPATH="$SCRIPTPATH/"
-        fi
-        CONFIGFILE="${SCRIPTPATH}${SCRIPTNAME%.*}"
-        if [ -f "$CONFIGFILE.cfg" ]; then
-            CONFIGFILE="$CONFIGFILE.cfg"
-        elif [ -f "$CONFIGFILE.conf" ]; then
-            CONFIGFILE="$CONFIGFILE.conf"
-        else
-            echo "Failed to find config file '$CONFIGFILE.conf'" 1>&2
+            echo "User '$USER' does not have permission to read config file '$CONFIGFILE'" >&2
             exit 1
         fi
-    elif ! [ -f "$CONFIGFILE" ]; then
-        echo "Failed to find config file '$CONFIGFILE'" 1>&2
-        exit 1
-    fi
-    if [ -r $CONFIGFILE ]; then
-        trap 'echo "Encountered an error while sourcing config file" 1>&2; exit 1' ERR
-        . $CONFIGFILE
-        trap - ERR
     else
-        echo "$USER does not have permission to read config file" 1>&2
+        echo "Config file '$CONFIGFILE' does not exist" >&2
         exit 1
     fi
 }
