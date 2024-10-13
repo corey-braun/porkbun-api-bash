@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-## https://github.com/corey-braun/porkbun-api-bash
-## Requires jq 1.6+ for interacting with JSON data
 
-## Set default variable values
+# https://github.com/corey-braun/porkbun-api-bash
+# Requires jq 1.6+ for interacting with JSON data
+
+# Set default variable values
 VERBOSITY=5
 LOGFILE="/tmp/porkbun-api-$USER.log"
 SILENT=false
@@ -26,9 +27,9 @@ Available commands:
     ping: Make an API call to the 'ping' endpoint. Useful for verifying your credentials and connection.
     custom <endpoint> [key=value [...]]: Make a custom API call. API endpoint and (optional) key=value pairs to send can be specified as arguments following the command, or through an interactive dialog if no additional arguments are provided."
 
-## Main function, only executed if script was not sourced in another script
+# Main function, only executed if script was not sourced in another script
 main() {
-    ## Parse flags, save variables to array to be applied after sourcing config file
+    # Parse flags, save variables to array to be applied after sourcing config file
     while getopts ":hsv:46d:c:" opt; do
         case $opt in
             h)
@@ -66,13 +67,13 @@ main() {
     done
     shift $(($OPTIND - 1))
     source_config
-    declare -p opt_vars >/dev/null 2>&1 && declare "${opt_vars[@]}" ## Set variables from flags, overwriting config file variables
+    declare -p opt_vars >/dev/null 2>&1 && declare "${opt_vars[@]}"  # Set variables from flags, overwriting config file variables
 
-    ## Check required variables are correctly set
+    # Check required variables are correctly set
     vars_set VERBOSITY APIKEY SECRETKEY
     vars_formatting
 
-    ## Execute specified function
+    # Execute specified function
     [ $# -eq 0 ] && usage "No command specified"
     case $1 in
         update-dns)
@@ -116,8 +117,8 @@ main() {
     esac
 }
 
-## Source config file from user's home directory
-## If variable 'CONFIGFILE' is set (typically from flag '-c'), sources that config file instead
+# Source config file from user's home directory
+# If variable 'CONFIGFILE' is set (typically from flag '-c'), sources that config file instead
 source_config() {
     if [ -z "$CONFIGFILE" ]; then
         CONFIGFILE="$HOME/.porkbun-apirc"
@@ -137,16 +138,16 @@ source_config() {
     fi
 }
 
-usage() { ## Args: [error message]
+usage() {  # Args: [error message]
     [ -n "$1" ] && echo "Error: $1" 1>&2
     echo "$usage_message" 1>&2
     exit 1
 }
 
-## Makes a call to porkbun API and sets 'api_response' to a string containing the API's JSON response
-## Endpoint argument should include everything after 'api.porkbun.com/api/json/v3/' in the endpoint's URI
-## All additional arguments are interpreted as 'key=value' pairs to add to JSON data sent in API call
-api_call() { ## Args: <endpoint> [key=value [...]]
+# Makes a call to porkbun API and sets 'api_response' to a string containing the API's JSON response
+# Endpoint argument should include everything after 'api.porkbun.com/api/json/v3/' in the endpoint's URI
+# All additional arguments are interpreted as 'key=value' pairs to add to JSON data sent in API call
+api_call() {  # Args: <endpoint> [key=value [...]]
     [ -z "$1" ] && log_exit 'No endpoint specified for API call'
     local endpoint curl_data response curl_exit_code http_status api_status
     endpoint="https://api.porkbun.com/api/json/v3/$1"
@@ -185,8 +186,8 @@ api_call() { ## Args: <endpoint> [key=value [...]]
     fi
 }
 
-## Convert top level json key/value pairs to associative array index/values
-json_to_assoc_array() { ## Args: <json string>
+# Convert top level json key/value pairs to associative array index/values
+json_to_assoc_array() {  # Args: <json string>
     unset json_array
     declare -gA json_array
     while IFS='=' read -r -d $'\t' key value; do
@@ -219,7 +220,7 @@ update_dns() {
 }
 
 retrieve_ssl() {
-    [ -z "$SSL_FOLDER" ] && SSL_FOLDER="/ssl/$DOMAIN" ## Set this default here so it will use domain set by flag or config
+    [ -z "$SSL_FOLDER" ] && SSL_FOLDER="/ssl/$DOMAIN"  # Set this default here so it will use domain set by flag or config
     log 6 "Retrieving SSL cert bundle for domain $DOMAIN & outputting to folder $SSL_FOLDER/"
     if [ ! -d "$SSL_FOLDER" ]; then
         log 4 "Creating SSL cert output folder '$SSL_FOLDER'"
@@ -227,7 +228,7 @@ retrieve_ssl() {
         check_exitcode "Failed to create SSL cert output folder '$SSL_FOLDER'"
     fi
     api_call "ssl/retrieve/$DOMAIN"
-    json_to_assoc_array "$api_response" ## Convert to associative array to iterate on SSL cert formats
+    json_to_assoc_array "$api_response"  # Convert to associative array to iterate on SSL cert formats
     local cert_to_check file_name_var file_name cert_file
     if [ "$CHECK_CURRENT_CERT" = true ]; then
         cert_to_check='certificatechain'
@@ -252,8 +253,8 @@ retrieve_ssl() {
     log_exit "SSL cert files for domain $DOMAIN written to folder $SSL_FOLDER successfully." 4
 }
 
-## Logging functions
-log() { ## Args: <severity level> <log message>
+# Logging functions
+log() {  # Args: <severity level> <log message>
     if [ "$VERBOSITY" -lt "$1" ]; then
         return 0
     fi
@@ -271,7 +272,7 @@ log() { ## Args: <severity level> <log message>
     fi
 }
 
-log_exit() { ## Args: <log message> [severity level] [exit code]
+log_exit() {  # Args: <log message> [severity level] [exit code]
     if [ -z "$2" ]; then
         severity_level=0
     else
@@ -290,14 +291,14 @@ log_exit() { ## Args: <log message> [severity level] [exit code]
     exit "$exit_code"
 }
 
-check_exitcode() { ## Args: <log message>
+check_exitcode() {  # Args: <log message>
     if [ $? -ne 0 ]; then
         log_exit "$1"
     fi
 }
 
-## Check supplied variables are set, variables names should be passed as strings without '$'
-vars_set() { ## Args: [var1] [var2] [var3] ...
+# Check supplied variables are set, variables names should be passed as strings without '$'
+vars_set() {  # Args: [var1] [var2] [var3] ...
     for i in "$@"; do
         if [ -z "${!i}" ]; then
             log_exit "Required variable '$i' is unset"
@@ -305,7 +306,7 @@ vars_set() { ## Args: [var1] [var2] [var3] ...
     done
 }
 
-## Check for correct variable formatting
+# Check for correct variable formatting
 vars_formatting() {
     SSL_FOLDER=${SSL_FOLDER%/}
     [ ${#IP_VERSION} -eq 1 ] && IP_VERSION="-$IP_VERSION"
@@ -314,5 +315,5 @@ vars_formatting() {
     ! [ "$A_RECORD_NUM" -ge 0 -a "$A_RECORD_NUM" -le 10 ] 2>/dev/null && echo 'A_RECORD_NUM must be set to a value between 0 and 10' 1>&2 && exit 1
 }
 
-## Run main function if this script wasn't sourced in another script.
+# Run main function if this script wasn't sourced in another script.
 [ "${BASH_SOURCE[0]}" = "$0" ] && main "$@"
