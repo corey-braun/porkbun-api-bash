@@ -94,7 +94,7 @@ main() {
         custom)
             local endpoint_end api_data
             if [ -z "$2" ]; then
-                read -p 'Enter API endpoint: https://porkbun.com/api/json/v3/' endpoint_end
+                read -p 'Enter API endpoint: https://api.porkbun.com/api/json/v3/' endpoint_end
                 api_data=()
                 while read -p "Optionally, enter additional JSON data to send with the API call in the form 'key=value': " && [ -n "$REPLY" ]; do
                     api_data+=("$REPLY")
@@ -144,12 +144,12 @@ usage() { ## Args: [error message]
 }
 
 ## Makes a call to porkbun API and sets 'api_response' to a string containing the API's JSON response
-## Endpoint argument should include everything after 'porkbun.com/api/json/v3/' in the endpoint's URI
+## Endpoint argument should include everything after 'api.porkbun.com/api/json/v3/' in the endpoint's URI
 ## All additional arguments are interpreted as 'key=value' pairs to add to JSON data sent in API call
 api_call() { ## Args: <endpoint> [key=value [...]]
     [ -z "$1" ] && log_exit 'No endpoint specified for API call'
     local endpoint curl_data response curl_exit_code http_status api_status
-    endpoint="https://porkbun.com/api/json/v3/$1"
+    endpoint="https://api.porkbun.com/api/json/v3/$1"
     shift
     curl_data="{\"apikey\":\"$APIKEY\",\"secretapikey\":\"$SECRETKEY\""
     for i in "$@"; do

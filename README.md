@@ -24,7 +24,7 @@ Makes an API call to the Porkbun API `ping` endpoint.
 Can be helpful for confirming your API credentials are configured correctly and you are able to make API calls.
 
 ### custom \<endpoint> [key=value [...]]
-Make a custom API call to a specified endpoint. The `endpoint` argument should be a string including everything after `https://porkbun.com/api/json/v3/` in the API endpoint's URI. Any additional arguments should be in the form `key=value`, and will be added to the JSON POST data sent in the API call.
+Make a custom API call to a specified endpoint. The `endpoint` argument should be a string including everything after `https://api.porkbun.com/api/json/v3/` in the API endpoint's URI. Any additional arguments should be in the form `key=value`, and will be added to the JSON POST data sent in the API call.
 
 For example, the following command could be used to create a DNS record:
 ```
