@@ -220,8 +220,11 @@ update_dns() {
 }
 
 retrieve_ssl() {
-    [ -z "$SSL_FOLDER" ] && SSL_FOLDER="/ssl/$DOMAIN"  # Set this default here so it will use domain set by flag or config
-    log 6 "Retrieving SSL cert bundle for domain $DOMAIN & outputting to folder $SSL_FOLDER/"
+    SSL_FOLDER=${SSL_FOLDER:-/ssl}
+    if [[ "${USE_DOMAIN_SUBFOLDER:-true}" == true ]]; then
+        SSL_FOLDER="${SSL_FOLDER}/${DOMAIN}"
+    fi
+    log 6 "Retrieving SSL cert bundle for domain ${DOMAIN} & saving to ${SSL_FOLDER}"
     if [ ! -d "$SSL_FOLDER" ]; then
         log 4 "Creating SSL cert output folder '$SSL_FOLDER'"
         mkdir -p "$SSL_FOLDER"
